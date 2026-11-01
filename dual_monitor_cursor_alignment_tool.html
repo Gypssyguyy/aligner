@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dual-Monitor Cursor Alignment & Physics Tool</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Inter Font -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom scrollbar for clean dark UI */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111827;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4b5563;
+        }
+        canvas {
+            touch-action: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
+
+    <!-- Header Navigation -->
+    <header class="border-b border-gray-800 bg-gray-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center text-white shadow-lg shadow-brand-500/20">
+                    <i class="fa-solid font-bold fa-display text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-none tracking-tight text-white">AlignMon <span class="text-xs px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 font-medium ml-1">v1.2</span></h1>
+                    <p class="text-xs text-gray-400">Dual-Monitor Cursor Mismatch Solver & Physics Simulator</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <button id="btnShare" class="flex items-center space-x-2 bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs px-3.5 py-2 rounded-lg border border-gray-700 transition">
+                    <i class="fa-solid fa-share-nodes"></i>
+                    <span class="hidden sm:inline">Share Preset Link</span>
+                </button>
+                <a href="#guide-section" class="flex items-center space-x-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium px-3.5 py-2 rounded-lg transition shadow-md shadow-brand-600/20">
+                    <i class="fa-solid fa-book-open"></i>
+                    <span>Fix Instructions</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- OS Security Banner Notice -->
+        <div class="bg-gradient-to-r from-amber-950/60 via-gray-900 to-amber-950/40 border border-amber-500/30 rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-lg">
+            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-amber-500"></div>
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div class="flex items-start space-x-3.5">
+                    <div class="p-2.5 bg-amber-500/10 rounded-xl text-amber-400 shrink-0 mt-0.5 sm:mt-0">
+                        <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-sm font-semibold text-amber-200">Why can't this website automatically fix your mouse cursor?</h2>
+                        <p class="text-xs text-gray-300 mt-0.5 leading-relaxed">
+                            Web browsers operate inside strict security sandboxes and <strong>cannot intercept or modify hardware system-level mouse movement across desktop monitors</strong>. However, this app calculates the exact physical dimensions, scaling disparity, boundary trap zones, and pixel offsets needed to manually calibrate your OS Display Settings.
+                        </p>
+                    </div>
+                </div>
+                <button onclick="this.parentElement.parentElement.remove()" class="text-gray-400 hover:text-gray-200 text-xs shrink-0 self-end sm:self-center px-2 py-1 rounded hover:bg-gray-800">
+                    Dismiss <i class="fa-solid fa-xmark ml-1"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Simulator & Controls Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- Left Controls Sidebar (5 cols on large screens) -->
+            <div class="lg:col-span-5 space-y-5">
+                
+                <!-- Quick Presets -->
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 shadow-sm">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-gray-400 block mb-2.5">Quick Setup Presets</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="applyPreset('laptop14_4k27')" class="text-left p-2.5 rounded-xl bg-gray-800/60 hover:bg-gray-800 border border-gray-700/60 hover:border-brand-500/50 transition group">
+                            <div class="text-xs font-medium text-gray-200 group-hover:text-brand-400">14" FHD + 27" 4K</div>
+                            <div class="text-[10px] text-gray-400">Common Laptop + Desktop Setup</div>
+                        </button>
+                        <button onclick="applyPreset('macbook16_ultrawide34')" class="text-left p-2.5 rounded-xl bg-gray-800/60 hover:bg-gray-800 border border-gray-700/60 hover:border-brand-500/50 transition group">
+                            <div class="text-xs font-medium text-gray-200 group-hover:text-brand-400">16" Retina + 34" UW</div>
+                            <div class="text-[10px] text-gray-400">MacBook + Ultrawide Monitor</div>
+                        </button>
+                        <button onclick="applyPreset('dual24_fhd')" class="text-left p-2.5 rounded-xl bg-gray-800/60 hover:bg-gray-800 border border-gray-700/60 hover:border-brand-500/50 transition group">
+                            <div class="text-xs font-medium text-gray-200 group-hover:text-brand-400">15.6" FHD + 24" FHD</div>
+                            <div class="text-[10px] text-gray-400">Matching Resolution, Diff Size</div>
+                        </button>
+                        <button onclick="applyPreset('laptop13_27qhd')" class="text-left p-2.5 rounded-xl bg-gray-800/60 hover:bg-gray-800 border border-gray-700/60 hover:border-brand-500/50 transition group">
+                            <div class="text-xs font-medium text-gray-200 group-hover:text-brand-400">13.3" QHD + 27" 1440p</div>
+                            <div class="text-[10px] text-gray-400">High Density Compact Setup</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Display 1 Configurator (Laptop) -->
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 sm:p-5 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-brand-500/5 rounded-full blur-2xl pointer-events-none"></div>
+                    <div class="flex items-center justify-between mb-3.5">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-3 h-3 rounded-full bg-indigo-500 inline-block"></span>
+                            <h3 class="font-semibold text-sm text-gray-200">Display 1 (Primary / Laptop)</h3>
+                        </div>
+                        <span id="d1-physical-info" class="text-[11px] font-mono bg-gray-800 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/20">--</span>
+                    </div>
+
+                    <div class="space-y-3.5">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-[11px] font-medium text-gray-400 block mb-1">Preset Resolution</label>
+                                <select id="d1-preset-res" class="w-full bg-gray-950 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-brand-500">
+                                    <option value="1920x1080">1920 × 1080 (FHD)</option>
+                                    <option value="2560x1440">2560 × 1440 (QHD)</option>
+                                    <option value="2880x1800">2880 × 1800 (MBP 16")</option>
+                                    <option value="3840x2160">3840 × 2160 (4K UHD)</option>
+                                    <option value="custom">Custom...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-medium text-gray-400 block mb-1">Diagonal Size (Inches)</label>
+                                <input type="number" id="d1-size" value="14" step="0.1" min="7" max="65" class="w-full bg-gray-950 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-brand-500">
+                            </div>
+                        </div>
+
+                        <!-- Custom resolution inputs hidden by default -->
+                        <div id="d1-custom-res-container" class="grid grid-cols-2 gap-3 hidden">
+                            <div>
+                                <label class="text-[10px] text-gray-400">Width (px)</label>
+                                <input type="number" id="d1-width" value="1920" class="w-full bg-gray-950 border border-gray-700 rounded-lg px-2 py-1 text-xs">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-gray-400">Height (px)</label>
+                                <input type="number" id="d1-height" value="1080" class="w-full bg-gray-950 border border-gray-700 rounded-lg px-2 py-1 text-xs">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-[11px] font-medium text-gray-400 block mb-1">OS Scaling</label>
+                                <select id="d1-scale" class="w-full bg-gray-950 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-brand-500">
+                                    <option value="1">100%</option>
+                                    <option value="1.25">125%</option>
+                                    <option value="1.5" selected>150% (Recommended)</option>
+                                    <option value="1.75">175%</option>
+                                    <option value="2">200%</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-medium text-gray-400 block mb-1">Calculated PPI</label>
+                                <div id="d1-ppi" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-gray-300 flex items-center justify-between">
+                                    <span>--</span>
+                                    <span class="text-[9px] text-gray-500">pixels/in</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Display 2 Configurator (External Monitor) -->
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 sm:p-5 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-cyan-500/5 rounded-full blur-2xl pointer-events-none"></div>
+                    <div class="flex items-center justify-between mb-3.5">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-3 h-3 rounded-full bg-cyan-400 inline-block"></span>
+                            <h3 class="font-semibold text-sm text-gray-200">Display 2 (External Monitor)</h3>
+                        </div>
+                        <span id="d2-physical-info" class="text-[11px] font-mono bg-gray-800 text-cyan-300 px-2 py-0.5 rounded border border-cyan-500/20">--</span>
+                    </div>
+
+                    <div class="space-y-3.5">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-[11px] font-medium text-gray-400 block mb-1">Preset Resolution</label>
+                                <select id="d2-preset-res" class="w-full bg-gray-950 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-brand-500">
+                                    <option value="1920x1080">1920 × 1080 (FHD)</option>
+                                    <option value="2560x1440">2560 × 1440 (QHD)</option>
+                                    <option value="3440x1440">3440 × 1440 (Ultrawide)</option>
+                                    <option value="3840x2160" selected>3840 × 2160 (4K UHD)</option>
+                                    <option value="custom">Custom...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-medium text-gray-400 block mb-1">Diagonal Size (Inches)</label>
+                                <input type="number" id="d2-size" value="27" step="0.1" min="7" max="65" class="w-full bg-gray-950 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-brand-500">
+                            </div>
+                        </div>
+
+                        <!-- Custom resolution inputs hidden by default -->
+                        <div id="d2-custom-res-container" class="grid grid-cols-2 gap-3 hidden">
+                            <div>
+                                <label class="text-[10px] text-gray-400">Width (px)</label>
+                                <input type="number" id="d2-width" value="3840" class="w-full bg-gray-950 border border-gray-700 rounded-lg px-2 py-1 text-xs">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-gray-400">Height (px)</label>
+                                <input type="number" id="d2-height" value="2160" class="w-full bg-gray-950 border border-gray-700 rounded-lg px-2 py-1 text-xs">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-[11px] font-medium text-gray-400 block mb-1">OS Scaling</label>
+                                <select id="d2-scale" class="w-full bg-gray-950 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-brand-500">
+                                    <option value="1">100%</option>
+                                    <option value="1.25">125%</option>
+                                    <option value="1.5">150%</option>
+                                    <option value="1.75">175%</option>
+                                    <option value="2">200%</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-medium text-gray-400 block mb-1">Calculated PPI</label>
+                                <div id="d2-ppi" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-gray-300 flex items-center justify-between">
+                                    <span>--</span>
+                                    <span class="text-[9px] text-gray-500">pixels/in</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Relative Positioning Controls -->
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
+                    <h3 class="font-semibold text-sm text-gray-200 flex items-center justify-between">
+                        <span>Relative Layout & Position</span>
+                        <span class="text-[10px] text-gray-400 font-normal">Physical placement on desk</span>
+                    </h3>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[11px] font-medium text-gray-400 block mb-1">Arrangement</label>
+                            <select id="layout-side" class="w-full bg-gray-950 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-brand-500">
+                                <option value="right" selected>Display 2 on Right</option>
+                                <option value="left">Display 2 on Left</option>
+                                <option value="top">Display 2 Above Display 1</option>
+                                <option value="bottom">Display 2 Below Display 1</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-medium text-gray-400 block mb-1">Alignment Anchoring</label>
+                            <select id="layout-anchor" class="w-full bg-gray-950 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-brand-500">
+                                <option value="bottom" selected>Align Bottom Edges (Desk level)</option>
+                                <option value="center">Align Vertical Centers</option>
+                                <option value="top">Align Top Edges</option>
+                                <option value="custom">Custom Offset...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Vertical / Horizontal Fine-Tune Slider -->
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-400">Vertical Alignment Offset:</span>
+                            <span id="offset-val-text" class="font-mono text-brand-400 font-medium">0 px</span>
+                        </div>
+                        <input type="range" id="vertical-offset-slider" min="-1500" max="1500" value="0" class="w-full accent-brand-500 h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer">
+                        <div class="flex justify-between text-[10px] text-gray-500 font-mono">
+                            <span>-1500px (Shift Down)</span>
+                            <span>0 (Aligned)</span>
+                            <span>+1500px (Shift Up)</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Visualizer & Solution Output (7 cols on large screens) -->
+            <div class="lg:col-span-7 space-y-5 flex flex-col">
+
+                <!-- Interactive Visual Canvas Container -->
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 sm:p-5 shadow-md flex-1 flex flex-col">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center space-x-2">
+                            <span class="relative flex h-2.5 w-2.5">
+                              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                            </span>
+                            <h3 class="font-semibold text-sm text-gray-200">Interactive Cursor Cross-Boundary Simulator</h3>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button id="btn-toggle-mode" class="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-2.5 py-1 rounded-lg border border-gray-700 transition">
+                                <i class="fa-solid fa-ruler-combined text-brand-400 mr-1"></i> Mode: <span id="mode-text">Physical Scale</span>
+                            </button>
+                            <button id="btn-reset-cursor" class="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-2.5 py-1 rounded-lg border border-gray-700 transition" title="Reset Simulation Cursor to Center">
+                                <i class="fa-solid fa-rotate-left"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Main Canvas Viewport -->
+                    <div class="relative w-full bg-gray-950 border border-gray-800 rounded-xl overflow-hidden flex-1 min-h-[360px] sm:min-h-[420px] flex items-center justify-center p-2 cursor-crosshair group">
+                        <canvas id="simCanvas" class="w-full h-full rounded-lg"></canvas>
+
+                        <!-- Canvas Overlay Tips -->
+                        <div class="absolute bottom-3 left-3 bg-gray-900/90 backdrop-blur border border-gray-800 px-3 py-1.5 rounded-lg text-[11px] text-gray-400 pointer-events-none shadow-lg">
+                            <i class="fa-solid fa-computer-mouse text-brand-400 mr-1"></i> Move mouse across the middle border to test transit alignment.
+                        </div>
+
+                        <!-- Collision & Trap Zone Alert Popup on Canvas -->
+                        <div id="trap-warning" class="absolute top-3 right-3 bg-red-950/80 border border-red-500/40 text-red-300 text-[11px] px-3 py-1.5 rounded-lg backdrop-blur hidden">
+                            <i class="fa-solid fa-ban text-red-400 mr-1"></i> Cursor trap / wall hit!
+                        </div>
+                    </div>
+
+                    <!-- Mismatch Diagnostic Cards below Canvas -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+                        <div class="bg-gray-950/80 border border-gray-800 p-3 rounded-xl">
+                            <div class="text-[11px] text-gray-400 font-medium mb-0.5">Physical Height Diff</div>
+                            <div id="diag-height-diff" class="text-base font-bold font-mono text-gray-200">-- cm</div>
+                            <div class="text-[10px] text-gray-500 mt-0.5" id="diag-height-sub">--</div>
+                        </div>
+
+                        <div class="bg-gray-950/80 border border-gray-800 p-3 rounded-xl">
+                            <div class="text-[11px] text-gray-400 font-medium mb-0.5">Boundary Mismatch (Trap)</div>
+                            <div id="diag-deadzone" class="text-base font-bold font-mono text-amber-400">-- %</div>
+                            <div class="text-[10px] text-gray-500 mt-0.5" id="diag-deadzone-sub">Screen perimeter where cursor blocks</div>
+                        </div>
+
+                        <div class="bg-gray-950/80 border border-gray-800 p-3 rounded-xl">
+                            <div class="text-[11px] text-gray-400 mb-0.5">Pixel Jump Disparity</div>
+                            <div id="diag-jump" class="text-base font-bold font-mono text-indigo-400">-- px</div>
+                            <div class="text-[10px] text-gray-500 mt-0.5" id="diag-jump-sub">Virtual distance cursor jumps</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Solution & OS Tuning Calculation Matrix -->
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
+                    <h3 class="font-semibold text-sm text-gray-200 flex items-center space-x-2">
+                        <i class="fa-solid fa-wand-magic-sparkles text-brand-400"></i>
+                        <span>Recommended OS Alignment Fix</span>
+                    </h3>
+
+                    <div id="solution-box" class="bg-brand-950/40 border border-brand-500/30 rounded-xl p-4 text-xs space-y-2">
+                        <div class="flex items-start justify-between">
+                            <span class="font-semibold text-brand-200 text-sm">Calculated Optimal OS Display Offset:</span>
+                            <span id="sol-offset-badge" class="font-mono bg-brand-500 text-white font-bold px-2.5 py-0.5 rounded text-xs shadow-sm">0 px</span>
+                        </div>
+                        <p id="sol-description" class="text-gray-300 leading-relaxed">
+                            Calculating optimal placement matrix...
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Comprehensive Step-by-Step OS Setup Guide -->
+        <section id="guide-section" class="bg-gray-900 border border-gray-800 rounded-2xl p-5 sm:p-7 shadow-md space-y-6 mt-8">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-800 pb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-100 flex items-center space-x-2">
+                        <i class="fa-solid fa-sliders text-brand-400"></i>
+                        <span>Step-by-Step OS Setup & Calibration Guide</span>
+                    </h2>
+                    <p class="text-xs text-gray-400 mt-1">How to apply these calculated alignment coordinates in your operating system.</p>
+                </div>
+                <!-- OS Selector Tabs -->
+                <div class="flex space-x-1 bg-gray-950 p-1 rounded-xl border border-gray-800 self-start sm:self-auto">
+                    <button id="tab-btn-win" onclick="switchOsTab('windows')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-brand-600 text-white shadow">
+                        <i class="fa-brands fa-windows mr-1"></i> Windows 10 / 11
+                    </button>
+                    <button id="tab-btn-mac" onclick="switchOsTab('mac')" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-gray-200 transition">
+                        <i class="fa-brands fa-apple mr-1"></i> macOS (Sequoia / Sonoma)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Windows Instructions Tab -->
+            <div id="tab-content-win" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-gray-950 p-4 rounded-xl border border-gray-800 space-y-2">
+                        <div class="w-7 h-7 rounded-lg bg-brand-500/20 text-brand-400 flex items-center justify-center font-bold text-xs">1</div>
+                        <h4 class="font-semibold text-xs text-gray-200">Open Display Settings</h4>
+                        <p class="text-[11px] text-gray-400 leading-relaxed">
+                            Right-click anywhere on your Desktop and select <strong class="text-gray-300">Display Settings</strong> (or press <kbd class="px-1.5 py-0.5 bg-gray-800 rounded text-[10px]">Win + I</kbd> &rarr; System &rarr; Display).
+                        </p>
+                    </div>
+
+                    <div class="bg-gray-950 p-4 rounded-xl border border-gray-800 space-y-2">
+                        <div class="w-7 h-7 rounded-lg bg-brand-500/20 text-brand-400 flex items-center justify-center font-bold text-xs">2</div>
+                        <h4 class="font-semibold text-xs text-gray-200">Identify Display Boxes</h4>
+                        <p class="text-[11px] text-gray-400 leading-relaxed">
+                            Click <strong class="text-gray-300">Identify</strong> to verify which monitor number corresponds to your laptop screen (usually Monitor 1) and your desktop screen (Monitor 2).
+                        </p>
+                    </div>
+
+                    <div class="bg-gray-950 p-4 rounded-xl border border-gray-800 space-y-2">
+                        <div class="w-7 h-7 rounded-lg bg-brand-500/20 text-brand-400 flex items-center justify-center font-bold text-xs">3</div>
+                        <h4 class="font-semibold text-xs text-gray-200">Drag to Calculated Offset</h4>
+                        <p class="text-[11px] text-gray-400 leading-relaxed">
+                            Click and drag the Monitor box vertically up or down. Position it according to the calculated physical height alignment shown above, then click <strong class="text-gray-300">Apply</strong>.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-950/30 border border-indigo-500/30 rounded-xl p-4 text-xs text-gray-300 flex items-start space-x-3">
+                    <i class="fa-solid fa-lightbulb text-indigo-400 text-base mt-0.5"></i>
+                    <div>
+                        <strong class="text-indigo-200">Pro Tip for Windows Users:</strong> Windows arranges monitors strictly based on total virtual render resolution (not physical screen size in inches). If you have a high-DPI 4K display next to a 1080p laptop display, lowering display scaling or matching physical PPI reduces cursor jump distance drastically.
+                    </div>
+                </div>
+            </div>
+
+            <!-- macOS Instructions Tab (Hidden by default) -->
+            <div id="tab-content-mac" class="space-y-4 hidden">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-gray-950 p-4 rounded-xl border border-gray-800 space-y-2">
+                        <div class="w-7 h-7 rounded-lg bg-brand-500/20 text-brand-400 flex items-center justify-center font-bold text-xs">1</div>
+                        <h4 class="font-semibold text-xs text-gray-200">Open System Settings</h4>
+                        <p class="text-[11px] text-gray-400 leading-relaxed">
+                            Click the Apple icon <i class="fa-brands fa-apple"></i> in the top-left corner, select <strong class="text-gray-300">System Settings</strong>, and navigate to <strong class="text-gray-300">Displays</strong>.
+                        </p>
+                    </div>
+
+                    <div class="bg-gray-950 p-4 rounded-xl border border-gray-800 space-y-2">
+                        <div class="w-7 h-7 rounded-lg bg-brand-500/20 text-brand-400 flex items-center justify-center font-bold text-xs">2</div>
+                        <h4 class="font-semibold text-xs text-gray-200">Click "Arrange..."</h4>
+                        <p class="text-[11px] text-gray-400 leading-relaxed">
+                            Click the <strong class="text-gray-300">Arrange...</strong> button at the top to open the visual monitor alignment blueprint canvas.
+                        </p>
+                    </div>
+
+                    <div class="bg-gray-950 p-4 rounded-xl border border-gray-800 space-y-2">
+                        <div class="w-7 h-7 rounded-lg bg-brand-500/20 text-brand-400 flex items-center justify-center font-bold text-xs">3</div>
+                        <h4 class="font-semibold text-xs text-gray-200">Fine-Nudge Display Window</h4>
+                        <p class="text-[11px] text-gray-400 leading-relaxed">
+                            Drag your external display icon up or down until the top or bottom edges align physically with your MacBook screen edge. Click <strong class="text-gray-300">Done</strong>.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="bg-cyan-950/30 border border-cyan-500/30 rounded-xl p-4 text-xs text-gray-300 flex items-start space-x-3">
+                    <i class="fa-solid fa-apple-trait text-cyan-400 text-base mt-0.5"></i>
+                    <div>
+                        <strong class="text-cyan-200">MacBook Stand Height Factor:</strong> If your laptop sits on an elevated aluminum cooling stand, measure the physical height difference from desk surface to bottom bezel with a ruler, then add that physical offset into the alignment slider.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-800 bg-gray-900/50 mt-12 py-6 text-center text-xs text-gray-500">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div>
+                Dual-Monitor Cursor Alignment & Physics Calculator &copy; 2026. Designed for smooth multi-display workflows.
+            </div>
+            <div class="flex space-x-4 text-gray-400">
+                <span class="flex items-center"><i class="fa-solid fa-laptop text-brand-400 mr-1"></i> Laptop + External Mon</span>
+                <span class="flex items-center"><i class="fa-solid fa-arrows-up-down-left-right text-brand-400 mr-1"></i> Multi-PPI Scaling</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Notification Popup -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-brand-600 text-white text-xs px-4 py-2.5 rounded-xl shadow-xl border border-brand-400/30 transition-all duration-300 transform translate-y-20 opacity-0 pointer-events-none flex items-center space-x-2 z-50">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="toast-msg">Preset URL copied to clipboard!</span>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        // --- State Management ---
+        const state = {
+            d1: { width: 1920, height: 1080, diagonal: 14.0, scale: 1.5, ppi: 0, physW: 0, physH: 0 },
+            d2: { width: 3840, height: 2160, diagonal: 27.0, scale: 1.0, ppi: 0, physW: 0, physH: 0 },
+            layout: { side: 'right', anchor: 'bottom', offsetPx: 0 },
+            renderMode: 'physical', // 'physical' or 'pixel'
+            cursor: { x: 0, y: 0, activeDisplay: 1 },
+            simMouse: { x: 0, y: 0, isHovered: false }
+        };
+
+        // --- DOM Elements ---
+        const d1PresetSelect = document.getElementById('d1-preset-res');
+        const d1SizeInput = document.getElementById('d1-size');
+        const d1ScaleSelect = document.getElementById('d1-scale');
+        const d1WidthInput = document.getElementById('d1-width');
+        const d1HeightInput = document.getElementById('d1-height');
+        const d1CustomResContainer = document.getElementById('d1-custom-res-container');
+
+        const d2PresetSelect = document.getElementById('d2-preset-res');
+        const d2SizeInput = document.getElementById('d2-size');
+        const d2ScaleSelect = document.getElementById('d2-scale');
+        const d2WidthInput = document.getElementById('d2-width');
+        const d2HeightInput = document.getElementById('d2-height');
+        const d2CustomResContainer = document.getElementById('d2-custom-res-container');
+
+        const layoutSideSelect = document.getElementById('layout-side');
+        const layoutAnchorSelect = document.getElementById('layout-anchor');
+        const verticalOffsetSlider = document.getElementById('vertical-offset-slider');
+        const offsetValText = document.getElementById('offset-val-text');
+
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const modeText = document.getElementById('mode-text');
+        const btnToggleMode = document.getElementById('btn-toggle-mode');
+        const btnResetCursor = document.getElementById('btn-reset-cursor');
+
+        // Diagnostics DOM
+        const d1PhysicalInfo = document.getElementById('d1-physical-info');
+        const d2PhysicalInfo = document.getElementById('d2-physical-info');
+        const d1PpiDisplay = document.getElementById('d1-ppi').querySelector('span');
+        const d2PpiDisplay = document.getElementById('d2-ppi').querySelector('span');
+
+        const diagHeightDiff = document.getElementById('diag-height-diff');
+        const diagHeightSub = document.getElementById('diag-height-sub');
+        const diagDeadzone = document.getElementById('diag-deadzone');
+        const diagJump = document.getElementById('diag-jump');
+
+        const solOffsetBadge = document.getElementById('sol-offset-badge');
+        const solDescription = document.getElementById('sol-description');
+        const trapWarning = document.getElementById('trap-warning');
+
+        // --- Helper Functions ---
+        function calculatePhysicalDimensions(widthPx, heightPx, diagonalInches) {
+            const aspectRatio = widthPx / heightPx;
+            const heightInches = diagonalInches / Math.sqrt(Math.pow(aspectRatio, 2) + 1);
+            const widthInches = heightInches * aspectRatio;
+            const ppi = Math.sqrt(Math.pow(widthPx, 2) + Math.pow(heightPx, 2)) / diagonalInches;
+
+            return {
+                widthCm: widthInches * 2.54,
+                heightCm: heightInches * 2.54,
+                widthIn: widthInches,
+                heightIn: heightInches,
+                ppi: Math.round(ppi)
+            };
+        }
+
+        function parseRes(presetVal, customW, customH) {
+            if (presetVal === 'custom') {
+                return { w: parseInt(customW) || 1920, h: parseInt(customH) || 1080 };
+            }
+            const parts = presetVal.split('x');
+            return { w: parseInt(parts[0]), h: parseInt(parts[1]) };
+        }
+
+        function updateStateFromDOM() {
+            const res1 = parseRes(d1PresetSelect.value, d1WidthInput.value, d1HeightInput.value);
+            state.d1.width = res1.w;
+            state.d1.height = res1.h;
+            state.d1.diagonal = parseFloat(d1SizeInput.value) || 14.0;
+            state.d1.scale = parseFloat(d1ScaleSelect.value) || 1.0;
+            const phys1 = calculatePhysicalDimensions(state.d1.width, state.d1.height, state.d1.diagonal);
+            state.d1.physW = phys1.widthCm;
+            state.d1.physH = phys1.heightCm;
+            state.d1.ppi = phys1.ppi;
+
+            const res2 = parseRes(d2PresetSelect.value, d2WidthInput.value, d2HeightInput.value);
+            state.d2.width = res2.w;
+            state.d2.height = res2.h;
+            state.d2.diagonal = parseFloat(d2SizeInput.value) || 27.0;
+            state.d2.scale = parseFloat(d2ScaleSelect.value) || 1.0;
+            const phys2 = calculatePhysicalDimensions(state.d2.width, state.d2.height, state.d2.diagonal);
+            state.d2.physW = phys2.widthCm;
+            state.d2.physH = phys2.heightCm;
+            state.d2.ppi = phys2.ppi;
+
+            state.layout.side = layoutSideSelect.value;
+            state.layout.anchor = layoutAnchorSelect.value;
+            state.layout.offsetPx = parseInt(verticalOffsetSlider.value) || 0;
+
+            if (state.layout.anchor === 'bottom') {
+                if (state.renderMode === 'physical') {
+                    state.layout.offsetPx = 0;
+                }
+            }
+
+            renderDiagnostics();
+            drawCanvas();
+        }
+
+        function renderDiagnostics() {
+            d1PhysicalInfo.textContent = `${state.d1.physW.toFixed(1)}×${state.d1.physH.toFixed(1)} cm`;
+            d2PhysicalInfo.textContent = `${state.d2.physW.toFixed(1)}×${state.d2.physH.toFixed(1)} cm`;
+            d1PpiDisplay.textContent = state.d1.ppi;
+            d2PpiDisplay.textContent = state.d2.ppi;
+
+            offsetValText.textContent = `${state.layout.offsetPx > 0 ? '+' : ''}${state.layout.offsetPx} px`;
+
+            const heightDiffCm = Math.abs(state.d1.physH - state.d2.physH);
+            diagHeightDiff.textContent = `${heightDiffCm.toFixed(1)} cm`;
+            diagHeightSub.textContent = state.d1.physH > state.d2.physH ? "Display 1 is taller" : "Display 2 is taller";
+
+            const h1 = state.d1.height;
+            const h2 = state.d2.height;
+            const minH = Math.min(h1, h2);
+            const maxH = Math.max(h1, h2);
+            const mismatchRatio = Math.round((1 - (minH / maxH)) * 100);
+            diagDeadzone.textContent = `${mismatchRatio}%`;
+            diagDeadzone.className = mismatchRatio > 30 ? "text-base font-bold font-mono text-red-400" : mismatchRatio > 15 ? "text-base font-bold font-mono text-amber-400" : "text-base font-bold font-mono text-emerald-400";
+
+            const effectivePPI1 = state.d1.ppi / state.d1.scale;
+            const effectivePPI2 = state.d2.ppi / state.d2.scale;
+            const jumpDisparityRatio = Math.abs((effectivePPI1 / effectivePPI2) - 1) * 100;
+            diagJump.textContent = `${jumpDisparityRatio.toFixed(0)}% PPI mismatch`;
+
+            const d1PhysHeightInches = state.d1.physH / 2.54;
+            const d2PhysHeightInches = state.d2.physH / 2.54;
+            const pxPerInchD2 = state.d2.height / d2PhysHeightInches;
+            const targetHeightPxInD2Scale = d1PhysHeightInches * pxPerInchD2;
+            const recommendedVerticalOffset = Math.round((state.d2.height - targetHeightPxInD2Scale) / 2);
+
+            solOffsetBadge.textContent = `${recommendedVerticalOffset >= 0 ? '+' : ''}${recommendedVerticalOffset} px`;
+            
+            if (mismatchRatio < 5 && Math.abs(state.d1.physH - state.d2.physH) < 1) {
+                solDescription.innerHTML = `Your two displays have very similar physical heights! Set both displays aligned to <strong>Bottom</strong> or <strong>Center</strong> in OS Settings for near 1:1 seamless mouse transit.`;
+            } else {
+                solDescription.innerHTML = `Because Display 2 is <strong>${state.d2.physH > state.d1.physH ? 'taller' : 'shorter'}</strong> than Display 1 by <strong>${heightDiffCm.toFixed(1)} cm</strong>, position Display 2 by nudging it <strong>${recommendedVerticalOffset >= 0 ? 'UP' : 'DOWN'} by approx ${Math.abs(recommendedVerticalOffset)} pixels</strong> in OS Display Settings to prevent cursor snagging near the bottom edge.`;
+            }
+        }
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = container.clientWidth * dpr;
+            canvas.height = container.clientHeight * dpr;
+            ctx.scale(dpr, dpr);
+            drawCanvas();
+        }
+
+        function drawCanvas() {
+            const width = canvas.parentElement.clientWidth;
+            const height = canvas.parentElement.clientHeight;
+
+            ctx.clearRect(0, 0, width, height);
+
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 1;
+            const gridSize = 24;
+            for (let x = 0; x < width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(width, y);
+                ctx.stroke();
+            }
+
+            let d1W, d1H, d2W, d2H;
+
+            if (state.renderMode === 'physical') {
+                d1W = state.d1.physW;
+                d1H = state.d1.physH;
+                d2W = state.d2.physW;
+                d2H = state.d2.physH;
+            } else {
+                d1W = state.d1.width / 100;
+                d1H = state.d1.height / 100;
+                d2W = state.d2.width / 100;
+                d2H = state.d2.height / 100;
+            }
+
+            const totalWidthUnits = d1W + d2W;
+            const maxHUnits = Math.max(d1H, d2H) + 10;
+            
+            const padding = 60;
+            const availW = width - (padding * 2);
+            const availH = height - (padding * 2);
+
+            const scale = Math.min(availW / totalWidthUnits, availH / maxHUnits);
+
+            const box1W = d1W * scale;
+            const box1H = d1H * scale;
+            const box2W = d2W * scale;
+            const box2H = d2H * scale;
+
+            let box1X, box1Y, box2X, box2Y;
+            const centerY = height / 2;
+
+            if (state.layout.side === 'right') {
+                box1X = (width - (box1W + box2W)) / 2;
+                box2X = box1X + box1W;
+            } else {
+                box2X = (width - (box1W + box2W)) / 2;
+                box1X = box2X + box2W;
+            }
+
+            const userOffsetScaled = (state.layout.offsetPx / 100) * (scale / 5);
+
+            if (state.layout.anchor === 'bottom') {
+                box1Y = centerY + (Math.max(box1H, box2H) / 2) - box1H;
+                box2Y = centerY + (Math.max(box1H, box2H) / 2) - box2H - userOffsetScaled;
+            } else if (state.layout.anchor === 'top') {
+                box1Y = centerY - (Math.max(box1H, box2H) / 2);
+                box2Y = box1Y - userOffsetScaled;
+            } else {
+                box1Y = centerY - (box1H / 2);
+                box2Y = centerY - (box2H / 2) - userOffsetScaled;
+            }
+
+            drawMonitorBox(
+                box1X, box1Y, box1W, box1H, 
+                'Display 1 (Laptop)', 
+                `${state.d1.width}×${state.d1.height}`, 
+                `${state.d1.physW.toFixed(1)}×${state.d1.physH.toFixed(1)} cm`,
+                '#6366f1', 'rgba(99, 102, 241, 0.12)', 
+                state.d1.scale
+            );
+
+            drawMonitorBox(
+                box2X, box2Y, box2W, box2H, 
+                'Display 2 (External)', 
+                `${state.d2.width}×${state.d2.height}`, 
+                `${state.d2.physW.toFixed(1)}×${state.d2.physH.toFixed(1)} cm`,
+                '#22d3ee', 'rgba(34, 211, 238, 0.12)', 
+                state.d2.scale
+            );
+
+            drawBoundaryTrapZones(box1X, box1Y, box1W, box1H, box2X, box2Y, box2W, box2H);
+            drawSimulatedCursor(box1X, box1Y, box1W, box1H, box2X, box2Y, box2W, box2H);
+        }
+
+        function drawMonitorBox(x, y, w, h, label, resText, physText, color, fillColor, scale) {
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+            ctx.shadowBlur = 15;
+            ctx.shadowOffsetY = 8;
+
+            ctx.fillStyle = fillColor;
+            ctx.beginPath();
+            ctx.roundRect(x, y, w, h, 8);
+            ctx.fill();
+
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetY = 0;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.fillStyle = '#f3f4f6';
+            ctx.font = '600 12px Inter, sans-serif';
+            ctx.fillText(label, x + 12, y + 22);
+
+            ctx.fillStyle = '#9ca3af';
+            ctx.font = '400 10px Inter, monospace';
+            ctx.fillText(`${resText} | Scale: ${scale * 100}%`, x + 12, y + 38);
+            ctx.fillText(physText, x + 12, y + 52);
+
+            ctx.fillStyle = '#374151';
+            ctx.fillRect(x + (w / 2) - 15, y + h, 30, 6);
+        }
+
+        function drawBoundaryTrapZones(b1x, b1y, b1w, b1h, b2x, b2y, b2w, b2h) {
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.25)';
+            ctx.strokeStyle = '#ef4444';
+            ctx.setLineDash([4, 4]);
+
+            const topMax = Math.max(b1y, b2y);
+            const bottomMin = Math.min(b1y + b1h, b2y + b2h);
+
+            if (b1y < topMax) {
+                ctx.fillRect(b1x + b1w - 6, b1y, 6, topMax - b1y);
+            }
+            if (b1y + b1h > bottomMin) {
+                ctx.fillRect(b1x + b1w - 6, bottomMin, 6, (b1y + b1h) - bottomMin);
+            }
+
+            if (b2y < topMax) {
+                ctx.fillRect(b2x, b2y, 6, topMax - b2y);
+            }
+            if (b2y + b2h > bottomMin) {
+                ctx.fillRect(b2x, bottomMin, 6, (b2y + b2h) - bottomMin);
+            }
+
+            ctx.setLineDash([]);
+        }
+
+        function drawSimulatedCursor(b1x, b1y, b1w, b1h, b2x, b2y, b2w, b2h) {
+            const m = state.simMouse;
+            if (!m.isHovered) return;
+
+            let inB1 = m.x >= b1x && m.x <= b1x + b1w && m.y >= b1y && m.y <= b1y + b1h;
+            let inB2 = m.x >= b2x && m.x <= b2x + b2w && m.y >= b2y && m.y <= b2y + b2h;
+
+            if (!inB1 && !inB2) {
+                trapWarning.classList.remove('hidden');
+            } else {
+                trapWarning.classList.add('hidden');
+            }
+
+            ctx.save();
+            ctx.translate(m.x, m.y);
+
+            ctx.shadowColor = 'rgba(0,0,0,0.6)';
+            ctx.shadowBlur = 6;
+            ctx.shadowOffsetY = 2;
+
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, 16);
+            ctx.lineTo(4, 12);
+            ctx.lineTo(9, 17);
+            ctx.lineTo(12, 15);
+            ctx.lineTo(7, 10);
+            ctx.lineTo(13, 10);
+            ctx.closePath();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function attachListeners() {
+            d1PresetSelect.addEventListener('change', (e) => {
+                if (e.target.value === 'custom') {
+                    d1CustomResContainer.classList.remove('hidden');
+                } else {
+                    d1CustomResContainer.classList.add('hidden');
+                }
+                updateStateFromDOM();
+            });
+
+            d2PresetSelect.addEventListener('change', (e) => {
+                if (e.target.value === 'custom') {
+                    d2CustomResContainer.classList.remove('hidden');
+                } else {
+                    d2CustomResContainer.classList.add('hidden');
+                }
+                updateStateFromDOM();
+            });
+
+            [d1SizeInput, d1ScaleSelect, d1WidthInput, d1HeightInput,
+             d2SizeInput, d2ScaleSelect, d2WidthInput, d2HeightInput,
+             layoutSideSelect, layoutAnchorSelect, verticalOffsetSlider].forEach(input => {
+                input.addEventListener('input', updateStateFromDOM);
+                input.addEventListener('change', updateStateFromDOM);
+            });
+
+            btnToggleMode.addEventListener('click', () => {
+                if (state.renderMode === 'physical') {
+                    state.renderMode = 'pixel';
+                    modeText.textContent = 'Pixel Grid Scale';
+                } else {
+                    state.renderMode = 'physical';
+                    modeText.textContent = 'Physical Scale';
+                }
+                updateStateFromDOM();
+            });
+
+            btnResetCursor.addEventListener('click', () => {
+                const width = canvas.parentElement.clientWidth;
+                const height = canvas.parentElement.clientHeight;
+                state.simMouse.x = width / 2;
+                state.simMouse.y = height / 2;
+                drawCanvas();
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                state.simMouse.x = e.clientX - rect.left;
+                state.simMouse.y = e.clientY - rect.top;
+                state.simMouse.isHovered = true;
+                drawCanvas();
+            });
+
+            canvas.addEventListener('mouseleave', () => {
+                state.simMouse.isHovered = false;
+                trapWarning.classList.add('hidden');
+                drawCanvas();
+            });
+
+            canvas.addEventListener('touchmove', (e) => {
+                if (e.touches.length > 0) {
+                    const rect = canvas.getBoundingClientRect();
+                    state.simMouse.x = e.touches[0].clientX - rect.left;
+                    state.simMouse.y = e.touches[0].clientY - rect.top;
+                    state.simMouse.isHovered = true;
+                    drawCanvas();
+                }
+            }, { passive: true });
+
+            window.addEventListener('resize', resizeCanvas);
+
+            document.getElementById('btnShare').addEventListener('click', () => {
+                const params = new URLSearchParams({
+                    d1r: d1PresetSelect.value,
+                    d1s: d1SizeInput.value,
+                    d1sc: d1ScaleSelect.value,
+                    d2r: d2PresetSelect.value,
+                    d2s: d2SizeInput.value,
+                    d2sc: d2ScaleSelect.value,
+                    side: layoutSideSelect.value,
+                    off: verticalOffsetSlider.value
+                });
+                const shareUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+                
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(shareUrl);
+                } else {
+                    const textArea = document.createElement("textarea");
+                    textArea.value = shareUrl;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                }
+                showToast("Preset link copied to clipboard!");
+            });
+        }
+
+        window.applyPreset = function(presetKey) {
+            if (presetKey === 'laptop14_4k27') {
+                d1PresetSelect.value = '1920x1080';
+                d1SizeInput.value = '14';
+                d1ScaleSelect.value = '1.5';
+
+                d2PresetSelect.value = '3840x2160';
+                d2SizeInput.value = '27';
+                d2ScaleSelect.value = '1.5';
+            } else if (presetKey === 'macbook16_ultrawide34') {
+                d1PresetSelect.value = '2880x1800';
+                d1SizeInput.value = '16';
+                d1ScaleSelect.value = '2';
+
+                d2PresetSelect.value = '3440x1440';
+                d2SizeInput.value = '34';
+                d2ScaleSelect.value = '1';
+            } else if (presetKey === 'dual24_fhd') {
+                d1PresetSelect.value = '1920x1080';
+                d1SizeInput.value = '15.6';
+                d1ScaleSelect.value = '1.25';
+
+                d2PresetSelect.value = '1920x1080';
+                d2SizeInput.value = '24';
+                d2ScaleSelect.value = '1';
+            } else if (presetKey === 'laptop13_27qhd') {
+                d1PresetSelect.value = '2560x1440';
+                d1SizeInput.value = '13.3';
+                d1ScaleSelect.value = '1.5';
+
+                d2PresetSelect.value = '2560x1440';
+                d2SizeInput.value = '27';
+                d2ScaleSelect.value = '1';
+            }
+
+            d1CustomResContainer.classList.add('hidden');
+            d2CustomResContainer.classList.add('hidden');
+            verticalOffsetSlider.value = 0;
+            updateStateFromDOM();
+            showToast("Preset loaded!");
+        };
+
+        window.switchOsTab = function(os) {
+            const winBtn = document.getElementById('tab-btn-win');
+            const macBtn = document.getElementById('tab-btn-mac');
+            const winContent = document.getElementById('tab-content-win');
+            const macContent = document.getElementById('tab-content-mac');
+
+            if (os === 'windows') {
+                winBtn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-brand-600 text-white shadow";
+                macBtn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-gray-200 transition";
+                winContent.classList.remove('hidden');
+                macContent.classList.add('hidden');
+            } else {
+                macBtn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-brand-600 text-white shadow";
+                winBtn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-gray-200 transition";
+                macContent.classList.remove('hidden');
+                winContent.classList.add('hidden');
+            }
+        };
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        function loadUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('d1r')) d1PresetSelect.value = params.get('d1r');
+            if (params.has('d1s')) d1SizeInput.value = params.get('d1s');
+            if (params.has('d1sc')) d1ScaleSelect.value = params.get('d1sc');
+            if (params.has('d2r')) d2PresetSelect.value = params.get('d2r');
+            if (params.has('d2s')) d2SizeInput.value = params.get('d2s');
+            if (params.has('d2sc')) d2ScaleSelect.value = params.get('d2sc');
+            if (params.has('side')) layoutSideSelect.value = params.get('side');
+            if (params.has('off')) verticalOffsetSlider.value = params.get('off');
+        }
+
+        window.onload = function() {
+            attachListeners();
+            loadUrlParams();
+            resizeCanvas();
+            updateStateFromDOM();
+        };
+    </script>
+</body>
+</html>
